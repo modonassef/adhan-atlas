@@ -1,0 +1,12 @@
+# Built by `node src/build.js site` and `node src/build.js adhan-atlas.html`; rebuild rather than keep copies
+/site/
+/adhan-atlas.html
+
+# Claude Code skills installed for this project (third-party, re-installable) and local settings
+/.claude/skills/
+/.claude/settings.local.json
+
+# Editor and system files
+.DS_Store
+Thumbs.db
+*.log

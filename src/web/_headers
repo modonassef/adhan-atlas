@@ -1,0 +1,20 @@
+# Caching rules, read by Cloudflare Pages and Netlify (other hosts ignore this file).
+# The page and the offline worker are always checked for a new version; everything else may be kept a week.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/about.html
+  Cache-Control: no-cache
+/sw.js
+  Cache-Control: no-cache
+/prayer-times/*
+  Cache-Control: no-cache
+/ar/*
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache
+/assets/*
+  Cache-Control: public, max-age=604800
+/icons/*
+  Cache-Control: public, max-age=604800

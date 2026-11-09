@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Adhan Atlas: a globe in the prayer bands (Dhuhr, Asr, Maghrib, Isha from west to east), the bright line
+       where Maghrib's adhan is sounding, and the crescent in the night. Full bleed, so it also works as a
+       maskable icon and an iPhone home-screen icon; the globe sits inside the 80% safe zone. -->
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#161b2b"/>
+      <stop offset="1" stop-color="#0b0d14"/>
+    </radialGradient>
+    <clipPath id="globe"><circle cx="256" cy="256" r="176"/></clipPath>
+    <mask id="crescent">
+      <circle cx="362" cy="196" r="34" fill="#fff"/>
+      <circle cx="376" cy="186" r="29" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <g clip-path="url(#globe)">
+    <circle cx="256" cy="256" r="176" fill="#f6ebbd"/>
+    <!-- each band is everything east of a meridian: the right half of the globe, back up along the meridian -->
+    <path d="M256 80A176 176 0 0 1 256 432A100.95 176 0 0 1 256 80Z" fill="#e07b3c"/>
+    <path d="M256 80A176 176 0 0 1 256 432A15.34 176 0 0 1 256 80Z" fill="#b0447f"/>
+    <path d="M256 80A176 176 0 0 1 256 432A45.55 176 0 0 0 256 80Z" fill="#253280"/>
+    <path d="M256 432A15.34 176 0 0 1 256 80" fill="none" stroke="#ffe8b4" stroke-opacity="0.18" stroke-width="22"/>
+    <path d="M256 432A15.34 176 0 0 1 256 80" fill="none" stroke="#ffecbe" stroke-opacity="0.35" stroke-width="11"/>
+    <path d="M256 432A15.34 176 0 0 1 256 80" fill="none" stroke="#fff6e0" stroke-width="4.5"/>
+  </g>
+  <circle cx="256" cy="256" r="176" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="3"/>
+  <rect x="300" y="140" width="110" height="110" fill="#f1c879" mask="url(#crescent)"/>
+</svg>

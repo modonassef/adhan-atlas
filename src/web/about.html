@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy and credits · Adhan Atlas</title>
+<meta name="description" content="How Adhan Atlas handles your data, and the sources and open-source work it is built on.">
+<meta name="theme-color" content="#0b0d14">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+:root {
+  color-scheme: dark;
+  --sky: #0b0d14; --sky-2: #11141c; --rule: rgba(238, 240, 245, 0.08);
+  --fg: #eef0f5; --fg-2: #a3a9b8; --muted: #7a8296;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--sky); color: var(--fg); font: 16px/1.6 "Public Sans", "Segoe UI", system-ui, sans-serif;
+  padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+}
+main { max-width: 68ch; margin: 0 auto; }
+a { color: var(--fg); text-decoration-color: rgba(238, 240, 245, 0.32); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--fg-2); }
+.back { display: inline-flex; gap: 8px; align-items: center; color: var(--fg-2); text-decoration: none; font-size: 0.9rem; }
+h1 { font: 600 1.8rem/1.2 "Reem Kufi", "Segoe UI", system-ui, sans-serif; margin: 24px 0 8px; }
+h2 { font: 500 1.05rem/1.3 "Public Sans", system-ui, sans-serif; margin: 32px 0 8px; }
+p, li { color: var(--fg-2); }
+ul { padding-inline-start: 20px; }
+li { margin: 6px 0; }
+section { border-top: 1px solid var(--rule); margin-top: 24px; }
+.ar { font-family: "Amiri Quran", "Amiri", serif; color: var(--fg-2); }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back to Adhan Atlas</a>
+  <h1>Privacy and credits</h1>
+  <p>Adhan Atlas <span class="ar" lang="ar">أطلس الأذان</span> is a live world map of the five daily prayers, with prayer times, the Qibla and a mosque display for any place.</p>
+
+  <section>
+    <h2>Your privacy</h2>
+    <ul>
+      <li>There are no accounts, no ads, no tracking and no cookies.</li>
+      <li>Your settings and saved places are kept in your own browser, on your device. Clearing the site's data removes them.</li>
+      <li>If you tap <b>Use my location</b>, your device tells the page where you are so it can work out your prayer times. That happens on your device; your position is not sent anywhere. The Qibla compass works the same way.</li>
+      <li>Everything the page needs, its code, map, town list and fonts, comes from this site, so no other company learns that you visited.</li>
+      <li>Like any website, the hosting service may keep ordinary request logs, such as IP addresses, for a short time.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>About the times</h2>
+    <p>Times are calculated on your device from the position of the sun, using the method you choose (or the one most used in each country). They usually agree with published timetables to within a minute or two, but mosques and local authorities may adjust them. Check with your local mosque for the timetable it follows.</p>
+  </section>
+
+  <section>
+    <h2>Data and credits</h2>
+    <ul>
+      <li>Town names, positions and time zones: <a href="https://www.geonames.org/">GeoNames</a>, licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</li>
+      <li>Country outlines, city and country populations: <a href="https://www.naturalearthdata.com/">Natural Earth</a> (public domain), outlines prepared by <a href="https://github.com/topojson/world-atlas">world-atlas</a> (Mike Bostock, ISC licence).</li>
+      <li>International airports, used to choose towns in sparsely populated regions: <a href="https://ourairports.com/">OurAirports</a> (public domain).</li>
+      <li>Prayer time calculation after the formulation published by <a href="http://praytimes.org/">PrayTimes.org</a> (Hamid Zarrabi-Zadeh). Hijri dates follow the Umm al-Qura calendar built into your browser.</li>
+      <li>Map drawing: <a href="https://d3js.org/">D3</a> and <a href="https://github.com/topojson/topojson-client">topojson-client</a> (Mike Bostock, ISC licence).</li>
+      <li>Fonts, under the <a href="https://openfontlicense.org/">SIL Open Font License 1.1</a>: Reem Kufi (Khaled Hosny, Santiago Orozco), Amiri Quran (Khaled Hosny), Public Sans (U.S. Web Design System), IBM Plex Mono and IBM Plex Sans Arabic (IBM).</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

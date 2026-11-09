@@ -1,0 +1,28 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Make icons</title>
+<!-- Development tool: draws src/web/icons/icon.svg at every size the site and the app stores need and posts the
+     PNGs to a local helper that saves them (see the publishing guide). Not part of the site. -->
+<body style="background:#222;color:#ccc;font:14px system-ui">
+<p id="log">Drawing…</p>
+<script>
+const SIZES = [['icon-1024.png', 1024], ['icon-512.png', 512], ['icon-192.png', 192], ['apple-touch-icon.png', 180], ['favicon-32.png', 32]];
+(async () => {
+  const svg = await (await fetch('../web/icons/icon.svg', { cache: 'no-store' })).text();
+  const img = new Image();
+  img.src = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  await img.decode();
+  const out = [];
+  for (const [name, n] of SIZES) {
+    const c = document.createElement('canvas'); c.width = c.height = n;
+    const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, n, n);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const res = await fetch('http://127.0.0.1:8766/save?name=icons/' + name, { method: 'POST', body: blob });
+    out.push(await res.text());
+    document.body.append(c);
+  }
+  document.getElementById('log').textContent = out.join(' · ');
+  window.done = out;
+})().catch(e => { document.getElementById('log').textContent = 'Failed: ' + e; window.done = ['error ' + e]; });
+</script>
+</body>
