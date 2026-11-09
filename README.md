@@ -40,3 +40,7 @@ populations from [Natural Earth](https://www.naturalearthdata.com/) (public doma
 [PrayTimes.org](http://praytimes.org/). Map drawing with [D3](https://d3js.org/) and topojson-client (ISC).
 Fonts under the SIL Open Font License 1.1: Reem Kufi, Amiri Quran, Public Sans, IBM Plex Mono and IBM Plex Sans
 Arabic. The full list is on the site's "Privacy and credits" page.
+
+## Licence
+
+The code is under the [MIT License](LICENSE). The map data, fonts and libraries keep their own licences, credited above.
