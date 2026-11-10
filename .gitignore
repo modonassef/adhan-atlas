@@ -2,9 +2,10 @@
 /site/
 /adhan-atlas.html
 
-# Claude Code skills installed for this project (third-party, re-installable) and local settings
-/.claude/skills/
-/.claude/settings.local.json
+# Working notes and tool settings that stay on the author's computer
+/PUBLISHING.md
+/DESIGN-TOKENS.md
+/.claude/
 
 # Editor and system files
 .DS_Store

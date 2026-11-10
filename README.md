@@ -29,8 +29,6 @@ python -m http.server 8767 --directory site
 | `src/citypages.js` | Makes the website's page for each city, in English and Arabic |
 | `src/data/` | Towns, time zones and country outlines |
 | `src/web/` | Files copied into the website as they are: fonts, icons, the offline worker |
-| `PUBLISHING.md` | How to put the site online |
-| `DESIGN-TOKENS.md` | The colours, sizes and spacing the design uses |
 
 ## Credits
 

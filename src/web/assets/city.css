@@ -1,4 +1,4 @@
-/* City pages: the same night sky and lamplight as the map, on a plain reading page. Tokens as in DESIGN-TOKENS.md. */
+/* City pages: the same night sky and lamplight as the map, on a plain reading page. The same tokens as src/template.html. */
 :root {
   color-scheme: dark;
   --ink-0: #07080d; --sky: #0b0d14; --sky-2: #11141c; --sky-3: #1a1e28;
