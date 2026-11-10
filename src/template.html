@@ -1388,7 +1388,7 @@ const waveCv = document.getElementById('wave'), wctx = waveCv.getContext('2d');
 // precision 1px: the detailed outlines need far less resampling and still look smooth
 const projMap = d3.geoNaturalEarth1().precision(1), projGlobe = d3.geoOrthographic().precision(1);
 let projection = projMap;
-let view = settings.view === 'globe' ? 'globe' : 'map';
+let view = settings.view === 'map' ? 'map' : 'globe';   // the globe unless the reader has chosen the flat map
 let rot = [-place.lon, -place.lat * 0.6];   // globe rotation baked in at the end of each drag
 let W = 0, H = 0, dpr = 1, base = null, zt = d3.zoomIdentity, phone = false;
 // On the globe, things on the far side are hidden
