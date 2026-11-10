@@ -407,15 +407,6 @@ dialog.sheet::backdrop { background: rgba(4, 5, 10, 0.66); }
   background: var(--fg); color: var(--sky); border-radius: var(--r-3); padding: 12px 16px; font-size: var(--fs-md); font-weight: 500;
   max-width: min(440px, calc(100vw - 32px)); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32); }
 
-/* Next prayer at the chosen place, in one line under the title; a tap goes to the full times */
-.nowbar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); width: 100%; min-height: 44px;
-  padding: 8px 16px; border: 1px solid var(--rule); border-radius: var(--r-4); background: var(--sky-2); cursor: pointer; text-align: start; }
-.nowbar:hover { border-color: var(--rule-2); }
-.nb-l { display: flex; align-items: baseline; gap: var(--s-2); min-width: 0; }
-.nb-k { color: var(--muted); font-size: var(--fs-sm); }
-.nb-l b { font-weight: 500; white-space: nowrap; }
-.nb-place { color: var(--fg-2); font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nb-count { font: 500 1.05rem/1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--lamp); white-space: nowrap; }
 /* First visit: the place was picked from the reader's time zone, so say so */
 .guess { margin: -4px 0 16px; color: var(--fg-2); font-size: var(--fs-sm); }
 #timesCard, #monthCard, #eventsCard, #crescentCard { scroll-margin-top: 12px; }
@@ -489,11 +480,6 @@ dialog.sheet::backdrop { background: rgba(4, 5, 10, 0.66); }
       <div class="status" id="status"><span class="dot"></span><span id="statusText">Live</span></div>
     </div>
   </header>
-
-  <button class="nowbar" id="nowBar" type="button" data-go="timesCard" hidden>
-    <span class="nb-l"><span class="nb-k" data-i="nbNext">Next</span><b id="nbNext"></b><span class="nb-place" id="nbPlace"></span></span>
-    <span class="nb-count" id="nbCount"></span>
-  </button>
 
   <div class="map" id="map">
     <canvas id="cv" data-ia="mapAria" aria-label="World map shaded by the current prayer period. Tap a place to see its prayer times."></canvas>
@@ -821,7 +807,7 @@ const I18N = {
     compassOn: 'Live compass: hold your phone flat and the gold arrow points to the Qibla', qiblaHere: 'In Makkah: face the Kaaba',
     tapCompass: 'Tap the dial for a live compass', noCompass: "This phone or page doesn't share its compass, so go by the bearing",
     dirs: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'],
-    nbNext: 'Next', navAria: 'Sections', navMap: 'Map', navTimes: 'Times', navMonth: 'Month', navDates: 'Dates', navMoon: 'Crescent',
+    navAria: 'Sections', navMap: 'Map', navTimes: 'Times', navMonth: 'Month', navDates: 'Dates', navMoon: 'Crescent',
     monthAll: 'Show the whole month', monthWeek: 'Show seven days',
     guess: c => `Showing ${c}, a major city in your time zone. For exact times, search for your town.`,
     shareText: (p, near) => p ? `Prayer times ${near ? 'near' : 'for'} ${p}` : 'Prayer times',
@@ -904,7 +890,7 @@ const I18N = {
     compassOn: 'البوصلة تعمل: أمسك هاتفك مستويًا، والسهم الذهبي يشير إلى القبلة', qiblaHere: 'في مكة: استقبل الكعبة',
     tapCompass: 'اضغط على القرص لتشغيل البوصلة', noCompass: 'لا يتيح هذا الهاتف أو هذه الصفحة الوصول إلى البوصلة، فاعتمد على الاتجاه المذكور',
     dirs: ['الشمال', 'الشمال الشرقي', 'الشرق', 'الجنوب الشرقي', 'الجنوب', 'الجنوب الغربي', 'الغرب', 'الشمال الغربي'],
-    nbNext: 'التالية', navAria: 'أقسام الصفحة', navMap: 'الخريطة', navTimes: 'المواقيت', navMonth: 'الشهر', navDates: 'المناسبات', navMoon: 'الهلال',
+    navAria: 'أقسام الصفحة', navMap: 'الخريطة', navTimes: 'المواقيت', navMonth: 'الشهر', navDates: 'المناسبات', navMoon: 'الهلال',
     monthAll: 'عرض الشهر كاملًا', monthWeek: 'عرض سبعة أيام',
     guess: c => `نعرض ${c}، وهي مدينة كبرى في منطقتك الزمنية. للمواقيت الدقيقة ابحث عن مدينتك.`,
     shareText: (p, near) => p ? `مواقيت الصلاة ${near ? 'قرب' : 'في'} ${p}` : 'مواقيت الصلاة',
@@ -2250,12 +2236,6 @@ function updatePanel() {
     setHTML($('nextName'), pnHTML(next.p));
     $('count').textContent = fmtCountdown(next.at - t);
   } else $('nextBox').hidden = true;
-  $('nowBar').hidden = !next;
-  if (next) {
-    setHTML($('nbNext'), `${AR() ? `<span class="arq">${next.p.ar}</span>` : next.p.name} ${fmtTime(next.at, tz)}`);
-    $('nbPlace').textContent = $('placeName').textContent;
-    $('nbCount').textContent = fmtCountdown(next.at - t);
-  }
   $('guessNote').hidden = !place.guess;
   if (place.guess) $('guessText').textContent = T('guess', cityName(place.name));
 
