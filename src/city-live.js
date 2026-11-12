@@ -6,7 +6,7 @@
   const box = document.getElementById('today'); if (!box) return;
   const d = box.dataset, lat = +d.lat, lon = +d.lon, tz = d.tz;
   const ar = document.documentElement.lang === 'ar';
-  const base = { method: d.method, asr: 1, highLat: 'angle', polar: 'nearest' };
+  const base = { method: d.method, asr: d.asr === '2' ? 2 : 1, highLat: 'angle', polar: 'nearest' };
   if (!METHODS[base.method] || !isFinite(lat) || !isFinite(lon)) return;
   const $ = id => document.getElementById(id);
   const dg = s => ar ? String(s).replace(/[0-9]/g, n => '٠١٢٣٤٥٦٧٨٩'[n]) : String(s);

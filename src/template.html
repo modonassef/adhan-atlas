@@ -221,6 +221,9 @@ input[type=range] { width: 100%; accent-color: var(--fg-2); height: 28px; margin
 .f { display: grid; gap: var(--s-1); font-size: var(--fs-sm); color: var(--fg-2); }
 select { width: 100%; background: var(--sky-3); border: 1px solid var(--rule-2); border-radius: var(--r-2); padding: 8px 12px; color: var(--fg); }
 .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--sky); border: 1px solid var(--rule-2); border-radius: var(--r-3); padding: 4px; gap: var(--s-1); }
+.seg3 { grid-template-columns: 1fr 1fr 1fr; }
+.seg3 button { padding-inline: 2px; }
+.seg + .angles { margin-top: 0; }
 .seg button { border: 0; background: transparent; border-radius: var(--r-1); padding: 8px; cursor: pointer; font-size: var(--fs-md); color: var(--fg-2); }
 .seg button small { color: var(--muted); font-size: var(--fs-xs); }
 .seg button[aria-pressed=true] small { color: var(--fg-2); }
@@ -591,10 +594,12 @@ dialog.sheet::backdrop { background: rgba(4, 5, 10, 0.66); }
         </label>
         <div class="angles" id="angles"></div>
         <div class="f"><span data-i="asrQ">Asr begins when a shadow is</span>
-          <div class="seg" id="asrSeg">
-            <button type="button" data-v="1"><span data-i="asr1">1× its length</span><br><small data-i="asr1s">Standard (Shafiʿi, Maliki, Hanbali)</small></button>
+          <div class="seg seg3" id="asrSeg">
+            <button type="button" data-v="auto"><span data-i="asrAuto">Automatic</span><br><small data-i="asrAutoS">By country</small></button>
+            <button type="button" data-v="1"><span data-i="asr1">1× its length</span><br><small data-i="asr1s">Standard</small></button>
             <button type="button" data-v="2"><span data-i="asr2">2× its length</span><br><small data-i="asr2s">Hanafi</small></button>
           </div>
+          <div class="angles" id="asrNote" hidden></div>
         </div>
         <label class="f"><span data-i="highLat">High-latitude rule (when twilight never ends)</span>
           <select id="highLat">
@@ -812,7 +817,9 @@ const I18N = {
     guess: c => `Showing ${c}, a major city in your time zone. For exact times, search for your town.`,
     shareText: (p, near) => p ? `Prayer times ${near ? 'near' : 'for'} ${p}` : 'Prayer times',
     settings: 'Settings', method: 'Calculation method', auto: 'Automatic, by country', asrQ: 'Asr begins when a shadow is',
-    asr1: '1× its length', asr1s: 'Standard (Shafiʿi, Maliki, Hanbali)', asr2: '2× its length', asr2s: 'Hanafi',
+    asr1: '1× its length', asr1s: 'Standard', asr1Schools: 'Standard: the Shafiʿi, Maliki and Hanbali schools', asr2: '2× its length', asr2s: 'Hanafi',
+    asrAuto: 'Automatic', asrAutoS: 'By country',
+    asrNote: (two, co) => two ? `2× its length (Hanafi)${co ? `, as followed in ${co}` : ''}` : '1× its length (standard)',
     highLat: 'High-latitude rule (when twilight never ends)', hlAngle: 'Angle-based', hlMiddle: 'Middle of the night',
     hlSeventh: 'One-seventh of the night', polar: "Where the sun doesn't rise or set that day",
     polarNearest: 'Nearest latitude where it does', polarMakkah: "Follow Makkah's day",
@@ -895,7 +902,9 @@ const I18N = {
     guess: c => `نعرض ${c}، وهي مدينة كبرى في منطقتك الزمنية. للمواقيت الدقيقة ابحث عن مدينتك.`,
     shareText: (p, near) => p ? `مواقيت الصلاة ${near ? 'قرب' : 'في'} ${p}` : 'مواقيت الصلاة',
     settings: 'الإعدادات', method: 'طريقة الحساب', auto: 'تلقائي، بحسب البلد', asrQ: 'يبدأ العصر حين يصير ظل الشيء',
-    asr1: 'مثله', asr1s: 'الجمهور (الشافعي والمالكي والحنبلي)', asr2: 'مثليه', asr2s: 'الحنفي',
+    asr1: 'مثله', asr1s: 'الجمهور', asr1Schools: 'قول الجمهور: الشافعية والمالكية والحنابلة', asr2: 'مثليه', asr2s: 'الحنفي',
+    asrAuto: 'تلقائي', asrAutoS: 'بحسب البلد',
+    asrNote: (two, co) => two ? `مثليه (المذهب الحنفي)${co ? `، كما هو المتبع في ${co}` : ''}` : 'مثله (قول الجمهور)',
     highLat: 'قاعدة خطوط العرض العليا (حين لا يغيب الشفق)', hlAngle: 'بحسب الزاوية', hlMiddle: 'منتصف الليل',
     hlSeventh: 'سُبع الليل', polar: 'حيث لا تشرق الشمس أو لا تغرب في ذلك اليوم',
     polarNearest: 'أقرب خط عرض تشرق فيه وتغرب', polarMakkah: 'اتباع نهار مكة',
@@ -1212,13 +1221,16 @@ const store = {
 };
 // 12- or 24-hour clock: whichever the reader's own locale uses, until they choose
 const LOCALE_CLOCK = (() => { try { return /h2[34]/.test(new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hourCycle) ? '24' : '12'; } catch { return '12'; } })();
-const settings = Object.assign({ method: 'auto', asr: 1, highLat: 'angle', polar: 'nearest', tzMode: 'place',
+const settings = Object.assign({ method: 'auto', asr: 'auto', highLat: 'angle', polar: 'nearest', tzMode: 'place',
   lang: /^ar\b/i.test(navigator.language || '') ? 'ar' : 'en', clock: LOCALE_CLOCK, qibla: false, chime: false },
   store.get('settings', {}));
 // a link may ask for a language (?lang=ar), as the site's Arabic city pages do
 try { const ql = new URLSearchParams(location.search).get('lang'); if (ql === 'ar' || ql === 'en') settings.lang = ql; } catch {}
 if (!settings.v) { settings.method = 'auto'; settings.v = 2; }   // earlier versions defaulted to MWL before auto existed
 if (settings.method !== 'auto' && !METHODS[settings.method]) settings.method = 'auto';
+// Asr used to be 1× until chosen otherwise; it now follows the country unless the reader had picked 2×
+if (settings.v < 3) { if (settings.asr !== 2) settings.asr = 'auto'; settings.v = 3; }
+if (settings.asr !== 1 && settings.asr !== 2) settings.asr = 'auto';
 delete settings.dateFirst;   // a setting from version 22, since removed: dates are always Gregorian first
 // Iqamah: when congregation begins, as minutes after the adhan or a set clock time. Jumuʿah takes Dhuhr's place on Fridays.
 const IQ_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'jumuah'];
@@ -1240,6 +1252,9 @@ const COUNTRY_METHOD = {
   MA: 'Morocco', TR: 'Turkey', IR: 'Tehran', PK: 'Karachi', IN: 'Karachi', BD: 'Karachi', AF: 'Karachi',
   MY: 'JAKIM', BN: 'JAKIM', SG: 'Singapore', ID: 'Kemenag', US: 'ISNA', CA: 'ISNA', FR: 'France', RU: 'Russia' };
 const methodFor = cc => settings.method !== 'auto' ? settings.method : COUNTRY_METHOD[cc] || 'MWL';
+// Where Asr is timed by the Hanafi rule (a shadow twice the object's length); everywhere else by the earlier one
+const COUNTRY_ASR = { PK: 2, IN: 2, BD: 2, AF: 2 };
+const asrFor = cc => settings.asr !== 'auto' ? settings.asr : COUNTRY_ASR[cc] || 1;
 const myTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 // A first visit opens on the leading city of the reader's own time zone, which needs no permission. It is only
 // a starting point (place.guess), and is not kept: the page says so and offers a search or the reader's location.
@@ -1557,7 +1572,7 @@ function paintOverlay(t, fast) {
   const paint = (o, la, lo, e, sinLa, cosLa) => {
     const st = wrapHour(utcH + lo / 15 + sp.eqt - 12);
     const sinA = sinLa * sinD + cosLa * cosD * Math.cos(st * 15 * RAD);
-    const p = e ? periodAt(e, st) : periodByAltitude(Math.asin(sinA) * DEG, st, la, sp.decl, settings);
+    const p = e ? periodAt(e, st) : periodByAltitude(Math.asin(sinA) * DEG, st, la, sp.decl, s);
     u[o >> 2] = lut[p * 256 + shadeIx(sinA)];
   };
   const binOf = la => ev[Math.min(BINS - 1, Math.floor((la + 90) * BINS / 180))];
@@ -1925,7 +1940,7 @@ const utcNoon = ms => { const d = new Date(ms); return Date.UTC(d.getUTCFullYear
 // The settings to calculate a civil date with in a given country: the method for that country,
 // and for Umm al-Qura whether it is Ramadan
 function calcFor(noonUTC, cc = place.cc) {
-  const s = { ...settings, method: methodFor(cc) };
+  const s = { ...settings, method: methodFor(cc), asr: asrFor(cc) };
   if (s.method === 'Makkah') { const h = hijri(noonUTC); if (h && h.month === 9) s.ramadan = true; }
   return s;
 }
@@ -2060,7 +2075,7 @@ function buildControls() {
   $('highLat').onchange = e => update({ highLat: e.target.value });
   $('polar').value = settings.polar;
   $('polar').onchange = e => update({ polar: e.target.value });
-  segment('asrSeg', 'asr', Number);
+  segment('asrSeg', 'asr', v => v === 'auto' ? v : Number(v));
   segment('tzSeg', 'tzMode', String);
   segment('clockSeg', 'clock', String);
 
@@ -2153,11 +2168,11 @@ function ruleText(i) {
   const k = methodFor(place.cc), m = METHODS[k];
   if (AR()) return [
     `الشمس ${dn(m.fajr)}° تحت الأفق`, 'الشروق · نهاية وقت الفجر', 'الزوال',
-    `ظل الشيء ${settings.asr === 2 ? 'مثليه' : 'مثله'} بعد ظل الزوال`, m.maghrib ? `الشمس ${dn(m.maghrib)}° تحت الأفق` : 'الغروب',
+    `ظل الشيء ${asrFor(place.cc) === 2 ? 'مثليه' : 'مثله'} بعد ظل الزوال`, m.maghrib ? `الشمس ${dn(m.maghrib)}° تحت الأفق` : 'الغروب',
     m.ishaMin ? `بعد المغرب بـ${dn(m.ishaMin)} دقيقة${k === 'Makkah' ? '، و١٢٠ في رمضان' : ''}` : `الشمس ${dn(m.isha)}° تحت الأفق`][i];
   return [
     `Sun ${m.fajr}° below horizon`, 'Sunrise · Fajr ends', 'Solar noon',
-    `Shadow ${settings.asr}× length + noon shadow`, m.maghrib ? `Sun ${m.maghrib}° below horizon` : 'Sunset',
+    `Shadow ${asrFor(place.cc)}× length + noon shadow`, m.maghrib ? `Sun ${m.maghrib}° below horizon` : 'Sunset',
     m.ishaMin ? `${m.ishaMin} min after Maghrib${k === 'Makkah' ? ', 120 in Ramadan' : ''}` : `Sun ${m.isha}° below horizon`][i];
 }
 let currentPeriod = -1;
@@ -2167,10 +2182,13 @@ function updateLegend() {
     `<b>${pnHTML(p)}</b><small>${ruleText(i)}</small>` +
     `<span class="ppl">${peopleNow ? `${fmtPeople(peopleNow[i])}<span class="ppl-w"> ${T('people')}</span>` : ''}</span></div>`).join('');
   const k = methodFor(place.cc), m = METHODS[k];
-  $('setSum').textContent = methodName(k) + (settings.asr === 2 ? T('hanafiAsr') : '');
+  $('setSum').textContent = methodName(k) + (asrFor(place.cc) === 2 ? T('hanafiAsr') : '');
   $('angles').textContent = (settings.method === 'auto' ? `${methodName(k)}${place.cc ? T('for', country(place.cc)) : ''} · ` : '') +
     T('fajrDeg', dn(m.fajr)) + ' · ' + (m.ishaMin ? T('ishaMin', dn(m.ishaMin)) : T('ishaDeg', dn(m.isha))) +
     (m.maghrib ? ' · ' + T('maghribDeg', dn(m.maghrib)) : '');
+  const two = asrFor(place.cc) === 2;
+  $('asrNote').hidden = settings.asr === 2;
+  $('asrNote').textContent = settings.asr === 1 ? T('asr1Schools') : T('asrNote', two, two && place.cc ? country(place.cc) : '');
 }
 
 const timesOn = (p, noon) => prayerTimes(p.lat, p.lon, noon, calcFor(noon, p.cc));
@@ -2200,7 +2218,7 @@ function updatePanel() {
   if (!valid) {
     const sp = sunPosition(t), st = wrapHour((t / 3600000) % 24 + place.lon / 15 + sp.eqt - 12);
     const sinA = Math.sin(place.lat * RAD) * Math.sin(sp.decl * RAD) + Math.cos(place.lat * RAD) * Math.cos(sp.decl * RAD) * Math.cos(st * 15 * RAD);
-    cur = periodByAltitude(Math.asin(sinA) * DEG, st, place.lat, sp.decl, settings);
+    cur = periodByAltitude(Math.asin(sinA) * DEG, st, place.lat, sp.decl, calcFor(noon));
   }
   if (cur !== currentPeriod) { currentPeriod = cur; updateLegend(); }
 
@@ -2554,7 +2572,7 @@ function renderMonth() {
     shown.map((r, i) => `<tr class="${r.noon === today ? 'today' : ''}${r.fri ? ' fri' : ''}"><th scope="row">${esc(r.a)}${r.fri ? ` <small>${T('jumuah')}</small>` : ''}</th>` +
       `<td class="d2">${esc(i ? r.b : r.bFull)}</td>${r.cells.map(c => `<td class="tm">${c}</td>`).join('')}</tr>`).join('') + '</tbody>';
   const k = methodFor(place.cc);
-  monthText = [T('ttTitle', shortName(place), $('monthName').textContent, methodName(k) + (settings.asr === 2 ? T('hanafiAsr') : '')),
+  monthText = [T('ttTitle', shortName(place), $('monthName').textContent, methodName(k) + (asrFor(place.cc) === 2 ? T('hanafiAsr') : '')),
     head.join('\t'), ...rows.map(r => [r.a, r.b, ...r.cells].join('\t'))].join('\n');
   renderYear();
   renderEvents();
@@ -2599,7 +2617,7 @@ function icsFold(line) {   // lines of at most 75 bytes, continued with a leadin
 function calEvents() { return monthRows.reduce((n, r) => n + settings.cal.keys.filter(k => isFinite(r.times[k])).length, 0); }
 function buildIcs() {
   const keys = settings.cal.keys, alert = +settings.cal.alert, who = shortName(place), stamp = icsTime(Date.now());
-  const k = methodFor(place.cc), how = methodName(k) + (settings.asr === 2 ? T('hanafiAsr') : '');
+  const k = methodFor(place.cc), how = methodName(k) + (asrFor(place.cc) === 2 ? T('hanafiAsr') : '');
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Adhan Atlas//Prayer times//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     `X-WR-CALNAME:${icsEsc(T('psTitle', who))}`];
   for (const r of monthRows) for (const p of PERIODS) {
@@ -2670,7 +2688,7 @@ function printHTML() {
   const angles = T('fajrDeg', dn(m.fajr)) + ', ' + (m.ishaMin ? T('ishaMin', dn(m.ishaMin)) : T('ishaDeg', dn(m.isha)));
   const km = distKm(place, KAABA);
   const meta = [place.cc ? country(place.cc) : '', fmtCoord(place.lat, place.lon), T('psTimes', z0 === z1 ? z0 : `${z0} → ${z1}`),
-    `${methodName(k)} (${angles})`, T('psAsr', settings.asr), km > 2 ? `${T('qibla')} ${dg(Math.round(qiblaBearing(place)) % 360)}°` : ''].filter(Boolean).join(' · ');
+    `${methodName(k)} (${angles})`, T('psAsr', asrFor(place.cc)), km > 2 ? `${T('qibla')} ${dg(Math.round(qiblaBearing(place)) % 360)}°` : ''].filter(Boolean).join(' · ');
   const head = [T('colDate'), T('colHijri'), ...PERIODS.map(pn)];
   const body = rows.map(r => {
     const fri = iq && r.fri;

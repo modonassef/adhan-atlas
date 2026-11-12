@@ -23,7 +23,7 @@ module.exports = function buildCityPages(out, { url, template, coreSrc, places, 
   const { METHODS, RAD, DEG, EVENTS, sunPosition, dayEvents, prayerTimes } =
     new Function(coreSrc + '\nreturn { METHODS, RAD, DEG, EVENTS, sunPosition, dayEvents, prayerTimes };')();
   const PERIODS = value(template, 'PERIODS'), METHOD_AR = value(template, 'METHOD_AR'), AR_NAMES = value(template, 'AR_NAMES'),
-    CITIES = value(template, 'CITIES'), COUNTRY_METHOD = value(template, 'COUNTRY_METHOD'), KAABA = value(template, 'KAABA');
+    CITIES = value(template, 'CITIES'), COUNTRY_METHOD = value(template, 'COUNTRY_METHOD'), KAABA = value(template, 'KAABA'), COUNTRY_ASR = value(template, 'COUNTRY_ASR');
   const slug = new Function([stmt(template, 'fold'), stmt(template, 'LATIN'), stmt(template, 'slug'), 'return slug;'].join('\n'))();
   if (PERIODS.length !== 6 || slug('São Paulo') !== 'sao-paulo' || !COUNTRY_METHOD.SA) throw new Error('city pages: the template no longer reads as expected');
 
@@ -106,7 +106,7 @@ module.exports = function buildCityPages(out, { url, template, coreSrc, places, 
       staticFor: d => `Times for ${d}.`,
       open: n => `Open ${n} on the live map`, openSub: 'The live map adds a Qibla compass, the month’s timetable, a calendar download and a mosque display.',
       about: 'About these times',
-      method: (m, fajr, isha, where) => `Times follow the ${m} method (Fajr when the sun is ${fajr}° below the horizon, Isha ${isha}), ${where}, with Asr when a shadow is as long as the object casting it. You can choose another method on the live map.`,
+      method: (m, fajr, isha, where, two) => `Times follow the ${m} method (Fajr when the sun is ${fajr}° below the horizon, Isha ${isha}), ${where}, with Asr when a shadow is ${two ? 'twice as long as the object casting it, the Hanafi rule' : 'as long as the object casting it'}. You can choose another method on the live map.`,
       ishaDeg: a => `at ${a}°`, ishaMin: m => `${m} minutes after Maghrib`,
       usedIn: co => co ? `the one most followed in ${co}` : 'the one most followed there', usedElse: 'used where no local method is set',
       qibla: (n, b, dir, km) => `The Qibla from ${n} is ${b}° from north, towards the ${dir}. The Kaaba is ${km} km away.`,
@@ -127,7 +127,7 @@ module.exports = function buildCityPages(out, { url, template, coreSrc, places, 
       staticFor: d => `مواقيت يوم ${d}.`,
       open: n => `اعرض ${n} على الخريطة الحيّة`, openSub: 'في الخريطة الحيّة بوصلة القبلة، وجدول الشهر، وتنزيل المواقيت إلى التقويم، وشاشة عرض للمساجد.',
       about: 'عن هذه المواقيت',
-      method: (m, fajr, isha, where) => `تُحسب المواقيت بطريقة ${m} (الفجر حين تكون الشمس ${fajr}° تحت الأفق، والعشاء ${isha})، ${where}، والعصر حين يصير ظل الشيء مثله. يمكنك اختيار طريقة أخرى في الخريطة الحيّة.`,
+      method: (m, fajr, isha, where, two) => `تُحسب المواقيت بطريقة ${m} (الفجر حين تكون الشمس ${fajr}° تحت الأفق، والعشاء ${isha})، ${where}، والعصر حين يصير ظل الشيء ${two ? 'مثليه على المذهب الحنفي' : 'مثله'}. يمكنك اختيار طريقة أخرى في الخريطة الحيّة.`,
       ishaDeg: a => `عند ${a}°`, ishaMin: m => `بعد المغرب بـ${m} دقيقة`,
       usedIn: co => co ? `وهي الأكثر اتباعًا في ${co}` : 'وهي الأكثر اتباعًا هناك', usedElse: 'وهي المعتمدة حيث لا توجد طريقة محلية',
       qibla: (n, b, dir, km) => `اتجاه القبلة من ${n}: ${b}° من الشمال، نحو ${dir}. وتبعد الكعبة المشرفة ${km} كم.`,
@@ -193,7 +193,8 @@ ${script ? `<script src="${root}assets/city.js" defer></script>\n` : ''}</body>
   function cityPage(c, lang, pool) {
     const t = T[lang], root = rootOf[lang], n = nameIn(c, lang), co = country(c, lang), L = s => dg(s, lang);
     const methodKey = COUNTRY_METHOD[c.cc] || 'MWL', m = METHODS[methodKey];
-    const base = { method: methodKey, asr: 1, highLat: 'angle', polar: 'nearest' };
+    const asr = COUNTRY_ASR[c.cc] || 1;
+    const base = { method: methodKey, asr, highLat: 'angle', polar: 'nearest' };
     const calc = noon => methodKey === 'Makkah' && hijriFmt && parseInt(hijriFmt.format(noon), 10) === 9 ? { ...base, ramadan: true } : base;
     const on = noon => prayerTimes(c.lat, c.lon, noon, calc(noon));
     const todayNoon = localNoon(now, c.tz), today = on(todayNoon);
@@ -220,7 +221,7 @@ ${script ? `<script src="${root}assets/city.js" defer></script>\n` : ''}</body>
     const fast = lo && hi && hi.len - lo.len > 1 / 12 ? t.fast(dur(lo.len), dayOf(lo.noon), dur(hi.len), dayOf(hi.noon)) : '';
     const known = !!COUNTRY_METHOD[c.cc];
     const method = t.method(lang === 'ar' ? METHOD_AR[methodKey] : m.name, num(m.fajr, lang),
-      m.ishaMin ? t.ishaMin(L(m.ishaMin)) : t.ishaDeg(num(m.isha, lang)), known ? t.usedIn(co) : t.usedElse);
+      m.ishaMin ? t.ishaMin(L(m.ishaMin)) : t.ishaDeg(num(m.isha, lang)), known ? t.usedIn(co) : t.usedElse, asr === 2);
     const rows = PERIODS.map(p => `      <li data-k="${p.key}"><i style="background:var(--p-${p.key})"></i><span class="n">${t.periods(p)}${lang === 'en' && p.en ? `<em>${p.en}</em>` : ''}</span><b class="t">${time(today[p.key], c, lang)}</b></li>`).join('\n');
     const table = Array.from({ length: 12 }, (_, mo) => {
       const noon = Date.UTC(year, mo, 15, 12), tm = on(noon);
@@ -242,7 +243,7 @@ ${script ? `<script src="${root}assets/city.js" defer></script>\n` : ''}</body>
     <h1>${esc(t.h1(n))}</h1>
     <p class="meta">${esc([co, coord(c, lang)].filter(Boolean).join(' · '))}</p>
   </div>
-  <section class="today" id="today" data-lat="${c.lat}" data-lon="${c.lon}" data-tz="${esc(c.tz)}" data-method="${methodKey}">
+  <section class="today" id="today" data-lat="${c.lat}" data-lon="${c.lon}" data-tz="${esc(c.tz)}" data-method="${methodKey}" data-asr="${asr}">
     <div class="today-head"><h2>${t.today}</h2><p class="date" id="tDate">${fmt(lang, c.tz, 'date').format(now)}</p></div>
     <div class="next" id="tNext" hidden><div><span class="lbl">${t.next}</span><b id="tNextName"></b><span class="at" id="tNextAt"></span></div><span class="count" id="tCount"></span></div>
     <ol class="times">
