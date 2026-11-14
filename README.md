@@ -75,6 +75,7 @@ then open <http://localhost:8767>.
 | `src/citypages.js` | Makes the website's page for each city, in English and Arabic |
 | `src/data/` | Towns, time zones and country outlines |
 | `src/web/` | Files copied into the website as they are: fonts, icons, the offline worker |
+| `netlify.toml` | Tells Netlify how to build and publish the site on every push |
 
 ## Credits
 

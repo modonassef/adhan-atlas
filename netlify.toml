@@ -1,0 +1,8 @@
+# Netlify builds and publishes the website from this repository on every push to main.
+# The caching rules are in src/web/_headers, which the build copies into the site.
+[build]
+  command = "node src/build.js site"
+  publish = "site"
+
+[build.environment]
+  NODE_VERSION = "22"
