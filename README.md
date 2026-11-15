@@ -83,6 +83,8 @@ then open <http://localhost:8767>.
 - Country outlines and populations: [Natural Earth](https://www.naturalearthdata.com/) (public domain)
 - Airports: [OurAirports](https://ourairports.com/) (public domain)
 - Prayer-time calculation after [PrayTimes.org](http://praytimes.org/)
+- London's times for 2026: the London unified prayer timetable, as published by
+  [East London Mosque](https://www.eastlondonmosque.org.uk/prayer-times)
 - Map drawing: [D3](https://d3js.org/) and topojson-client (ISC)
 - Fonts, under the SIL Open Font License 1.1: Reem Kufi, Amiri Quran, Public Sans, IBM Plex Mono and IBM Plex Sans
   Arabic

@@ -824,6 +824,8 @@ const I18N = {
     hlSeventh: 'One-seventh of the night', polar: "Where the sun doesn't rise or set that day",
     polarNearest: 'Nearest latitude where it does', polarMakkah: "Follow Makkah's day",
     tzQ: 'Show times in', tzPlace: "That place's time", tzMine: 'My time', clockQ: 'Clock', c12: '12-hour', c24: '24-hour',
+    fromTable: 'As the timetable prints it', tabIn: y => `Fajr and Isha as London’s mosques publish them for ${y}`,
+    tabOut: y => `only ${y} is stored, so Fajr and Isha are calculated: `,
     for: c => ` for ${c}`, fajrDeg: d => `Fajr ${d}°`, ishaDeg: d => `Isha ${d}°`, ishaMin: n => `Isha ${n} min after Maghrib`, maghribDeg: d => `Maghrib ${d}°`,
     year: 'Year at a glance', yearHint: 'Tap or hover a day to read its times', yearAria: 'Prayer periods through the year, one column per day',
     today: 'today', month: 'Monthly timetable', prevMonth: 'Previous month', nextMonth: 'Next month', copy: 'Copy',
@@ -909,6 +911,8 @@ const I18N = {
     hlSeventh: 'سُبع الليل', polar: 'حيث لا تشرق الشمس أو لا تغرب في ذلك اليوم',
     polarNearest: 'أقرب خط عرض تشرق فيه وتغرب', polarMakkah: 'اتباع نهار مكة',
     tzQ: 'عرض المواقيت بتوقيت', tzPlace: 'ذلك المكان', tzMine: 'جهازي', clockQ: 'الساعة', c12: '١٢ ساعة', c24: '٢٤ ساعة',
+    fromTable: 'كما في الجدول المنشور', tabIn: y => `الفجر والعشاء كما تنشرهما مساجد لندن لعام ${y}`,
+    tabOut: y => `المخزَّن عام ${y} فقط، فيُحسب الفجر والعشاء: `,
     for: c => ` في ${c}`, fajrDeg: d => `الفجر ${d}°`, ishaDeg: d => `العشاء ${d}°`, ishaMin: n => `العشاء بعد المغرب بـ${n} دقيقة`, maghribDeg: d => `المغرب ${d}°`,
     year: 'السنة في لمحة', yearHint: 'اضغط على يوم أو مرّر فوقه لقراءة مواقيته', yearAria: 'أوقات الصلاة على مدار السنة، عمود لكل يوم',
     today: 'اليوم', month: 'جدول الشهر', prevMonth: 'الشهر السابق', nextMonth: 'الشهر التالي', copy: 'نسخ',
@@ -961,7 +965,7 @@ const METHOD_AR = {
   Singapore: 'المجلس الإسلامي، سنغافورة', JAKIM: 'إدارة التنمية الإسلامية، ماليزيا', Kemenag: 'وزارة الشؤون الدينية، إندونيسيا',
   Turkey: 'رئاسة الشؤون الدينية، تركيا', France: 'اتحاد المنظمات الإسلامية، فرنسا', Russia: 'الإدارة الدينية لمسلمي روسيا',
   Morocco: 'وزارة الأوقاف والشؤون الإسلامية، المغرب', Brunei: 'وزارة الشؤون الدينية، بروناي',
-  Kazakhstan: 'الإدارة الدينية لمسلمي كازاخستان', Uzbekistan: 'إدارة مسلمي أوزبكستان',
+  Kazakhstan: 'الإدارة الدينية لمسلمي كازاخستان', Uzbekistan: 'إدارة مسلمي أوزبكستان', London: 'جدول لندن الموحّد',
 };
 const MOON_AR = { 'New moon': 'محاق', 'Waxing crescent': 'هلال متزايد', 'First quarter': 'تربيع أول', 'Waxing gibbous': 'أحدب متزايد',
   'Full moon': 'بدر', 'Waning gibbous': 'أحدب متناقص', 'Last quarter': 'تربيع أخير', 'Waning crescent': 'هلال متناقص' };
@@ -1228,7 +1232,7 @@ const settings = Object.assign({ method: 'auto', asr: 'auto', highLat: 'angle', 
 // a link may ask for a language (?lang=ar), as the site's Arabic city pages do
 try { const ql = new URLSearchParams(location.search).get('lang'); if (ql === 'ar' || ql === 'en') settings.lang = ql; } catch {}
 if (!settings.v) { settings.method = 'auto'; settings.v = 2; }   // earlier versions defaulted to MWL before auto existed
-if (settings.method !== 'auto' && !METHODS[settings.method]) settings.method = 'auto';
+if (settings.method !== 'auto' && (!METHODS[settings.method] || METHODS[settings.method].table)) settings.method = 'auto';
 // Asr used to be 1× until chosen otherwise; it now follows the country unless the reader had picked 2×
 if (settings.v < 3) { if (settings.asr !== 2) settings.asr = 'auto'; settings.v = 3; }
 if (settings.asr !== 1 && settings.asr !== 2) settings.asr = 'auto';
@@ -1253,7 +1257,10 @@ const COUNTRY_METHOD = {
   MA: 'Morocco', TR: 'Turkey', IR: 'Tehran', PK: 'Karachi', IN: 'Karachi', BD: 'Karachi', AF: 'Karachi',
   MY: 'JAKIM', BN: 'Brunei', SG: 'Singapore', ID: 'Kemenag', US: 'ISNA', CA: 'ISNA', FR: 'France', RU: 'Russia',
   KZ: 'Kazakhstan', UZ: 'Uzbekistan' };
-const methodFor = cc => settings.method !== 'auto' ? settings.method : COUNTRY_METHOD[cc] || 'MWL';
+// The method for a place ({ cc, lat, lon }, or only { cc }): the reader's choice, or else a timetable the place
+// shares locally (London), or else its country's
+const methodFor = p => settings.method !== 'auto' ? settings.method :
+  p.lat != null && localMethod(p.lat, p.lon) || COUNTRY_METHOD[p.cc] || 'MWL';
 // Where Asr is timed by the Hanafi rule (a shadow twice the object's length); everywhere else by the earlier one.
 // Kazakhstan, Uzbekistan and Kyrgyzstan are as their muftiates' own timetables give it. Türkiye and Russia, though
 // largely Hanafi, publish the earlier time.
@@ -1943,8 +1950,8 @@ const hijriText = h => AR() ? `${dg(h.day)} ${HIJRI_MONTHS[h.month - 1][1]} ${dg
 const utcNoon = ms => { const d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12); };
 // The settings to calculate a civil date with in a given country: the method for that country,
 // and for Umm al-Qura whether it is Ramadan
-function calcFor(noonUTC, cc = place.cc) {
-  const s = { ...settings, method: methodFor(cc), asr: asrFor(cc) };
+function calcFor(noonUTC, p = place) {
+  const s = { ...settings, method: methodFor(p), asr: asrFor(p.cc) };
   if (s.method === 'Makkah') { const h = hijri(noonUTC); if (h && h.month === 9) s.ramadan = true; }
   return s;
 }
@@ -2070,7 +2077,8 @@ q.addEventListener('blur', () => setTimeout(() => { qList.hidden = true; q.setAt
 const methodName = k => AR() && METHOD_AR[k] || METHODS[k].name;
 function fillMethods() {
   methodSel.innerHTML = `<option value="auto">${T('auto')}</option>` +
-    Object.keys(METHODS).map(k => `<option value="${k}">${methodName(k)}</option>`).join('');
+    Object.keys(METHODS).filter(k => !METHODS[k].table)   // a city's own timetable comes with Automatic, there only
+      .map(k => `<option value="${k}">${methodName(k)}</option>`).join('');
   methodSel.value = settings.method;
 }
 function buildControls() {
@@ -2169,10 +2177,11 @@ function update(patch) {
 }
 
 function ruleText(i) {
-  const k = methodFor(place.cc), m = METHODS[k];
+  const k = methodFor(place), m = METHODS[k];
   // the whole minutes of precaution the authority's own timetable adds to this time, if any
   const a = Math.trunc(m.adj && m.adj[PERIODS[i].key] || 0);
   const adj = a ? ` ${a > 0 ? '+' : '−'} ${dn(Math.abs(a))} ${AR() ? 'د' : 'min'}` : '';
+  if ((i === 0 || i === 5) && m.table && onTable(place)) return T('fromTable');   // Fajr and Isha as the timetable prints them
   if (AR()) return [
     `الشمس ${dn(m.fajr)}° تحت الأفق${adj}`, `الشروق${adj} · نهاية وقت الفجر`, `الزوال${adj}`,
     `ظل الشيء ${asrFor(place.cc) === 2 ? 'مثليه' : 'مثله'} بعد ظل الزوال${adj && '،' + adj}`, (m.maghrib ? `الشمس ${dn(m.maghrib)}° تحت الأفق` : 'الغروب') + adj,
@@ -2188,17 +2197,21 @@ function updateLegend() {
     `<div class="lg${i === currentPeriod ? ' on' : ''}"><span class="sw" style="background:var(${p.css})"></span>` +
     `<b>${pnHTML(p)}</b><small>${ruleText(i)}</small>` +
     `<span class="ppl">${peopleNow ? `${fmtPeople(peopleNow[i])}<span class="ppl-w"> ${T('people')}</span>` : ''}</span></div>`).join('');
-  const k = methodFor(place.cc), m = METHODS[k];
+  const k = methodFor(place), m = METHODS[k];
   $('setSum').textContent = methodName(k) + (asrFor(place.cc) === 2 ? T('hanafiAsr') : '');
-  $('angles').textContent = (settings.method === 'auto' ? `${methodName(k)}${place.cc ? T('for', country(place.cc)) : ''} · ` : '') +
-    T('fajrDeg', dn(m.fajr)) + ' · ' + (m.ishaMin ? T('ishaMin', dn(m.ishaMin)) : T('ishaDeg', dn(m.isha))) +
+  const degs = T('fajrDeg', dn(m.fajr)) + ' · ' + (m.ishaMin ? T('ishaMin', dn(m.ishaMin)) : T('ishaDeg', dn(m.isha))) +
     (m.maghrib ? ' · ' + T('maghribDeg', dn(m.maghrib)) : '');
+  // a city's stored timetable says which year it holds, and that other years are calculated
+  $('angles').textContent = m.table ? `${methodName(k)} · ` + (onTable(place) ? T('tabIn', dn(LONDON.year)) : T('tabOut', dn(LONDON.year)) + degs)
+    : (settings.method === 'auto' ? `${methodName(k)}${place.cc ? T('for', country(place.cc)) : ''} · ` : '') + degs;
   const two = asrFor(place.cc) === 2;
   $('asrNote').hidden = settings.asr === 2;
   $('asrNote').textContent = settings.asr === 1 ? T('asr1Schools') : T('asrNote', two, two && place.cc ? country(place.cc) : '');
 }
 
-const timesOn = (p, noon) => prayerTimes(p.lat, p.lon, noon, calcFor(noon, p.cc));
+const timesOn = (p, noon) => prayerTimes(p.lat, p.lon, noon, calcFor(noon, p));
+// Whether a place's Fajr and Isha today come from a stored timetable rather than from the sun's angle
+const onTable = p => { const noon = localDateNoon(now(), p.tz); return !!tableTimes(p.lat, p.lon, noon, calcFor(noon, p)); };
 // The next prayer at a place after time t (Shuruq counts as the end of Fajr, so it is skipped)
 function nextPrayer(p, t) {
   const noon = localDateNoon(t, p.tz), times = timesOn(p, noon);
@@ -2578,7 +2591,7 @@ function renderMonth() {
   $('monthTable').innerHTML = `<thead><tr>${head.map((h, i) => `<th scope="col"${i > 1 ? ' class="tm"' : i === 1 ? ' class="d2"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>` +
     shown.map((r, i) => `<tr class="${r.noon === today ? 'today' : ''}${r.fri ? ' fri' : ''}"><th scope="row">${esc(r.a)}${r.fri ? ` <small>${T('jumuah')}</small>` : ''}</th>` +
       `<td class="d2">${esc(i ? r.b : r.bFull)}</td>${r.cells.map(c => `<td class="tm">${c}</td>`).join('')}</tr>`).join('') + '</tbody>';
-  const k = methodFor(place.cc);
+  const k = methodFor(place);
   monthText = [T('ttTitle', shortName(place), $('monthName').textContent, methodName(k) + (asrFor(place.cc) === 2 ? T('hanafiAsr') : '')),
     head.join('\t'), ...rows.map(r => [r.a, r.b, ...r.cells].join('\t'))].join('\n');
   renderYear();
@@ -2624,7 +2637,7 @@ function icsFold(line) {   // lines of at most 75 bytes, continued with a leadin
 function calEvents() { return monthRows.reduce((n, r) => n + settings.cal.keys.filter(k => isFinite(r.times[k])).length, 0); }
 function buildIcs() {
   const keys = settings.cal.keys, alert = +settings.cal.alert, who = shortName(place), stamp = icsTime(Date.now());
-  const k = methodFor(place.cc), how = methodName(k) + (asrFor(place.cc) === 2 ? T('hanafiAsr') : '');
+  const k = methodFor(place), how = methodName(k) + (asrFor(place.cc) === 2 ? T('hanafiAsr') : '');
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Adhan Atlas//Prayer times//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     `X-WR-CALNAME:${icsEsc(T('psTitle', who))}`];
   for (const r of monthRows) for (const p of PERIODS) {
@@ -2691,11 +2704,11 @@ function printHTML() {
     ? `${hijriMonth(a.h.month)}${a.h.month !== z.h.month ? ' – ' + hijriMonth(z.h.month) : ''} ${dg(z.h.year)} ${T('ah')}`
     : `${hijriMonth(a.h.month)} ${dg(a.h.year)} – ${hijriMonth(z.h.month)} ${dg(z.h.year)} ${T('ah')}`) : '';
   const z0 = tzLabel(tz, a.noon), z1 = tzLabel(tz, z.noon);
-  const k = methodFor(place.cc), m = METHODS[k];
+  const k = methodFor(place), m = METHODS[k];
   const angles = T('fajrDeg', dn(m.fajr)) + ', ' + (m.ishaMin ? T('ishaMin', dn(m.ishaMin)) : T('ishaDeg', dn(m.isha)));
   const km = distKm(place, KAABA);
   const meta = [place.cc ? country(place.cc) : '', fmtCoord(place.lat, place.lon), T('psTimes', z0 === z1 ? z0 : `${z0} → ${z1}`),
-    `${methodName(k)} (${angles})`, T('psAsr', asrFor(place.cc)), km > 2 ? `${T('qibla')} ${dg(Math.round(qiblaBearing(place)) % 360)}°` : ''].filter(Boolean).join(' · ');
+    m.table && onTable(place) ? methodName(k) : `${methodName(k)} (${angles})`, T('psAsr', asrFor(place.cc)), km > 2 ? `${T('qibla')} ${dg(Math.round(qiblaBearing(place)) % 360)}°` : ''].filter(Boolean).join(' · ');
   const head = [T('colDate'), T('colHijri'), ...PERIODS.map(pn)];
   const body = rows.map(r => {
     const fri = iq && r.fri;
@@ -3262,7 +3275,13 @@ function updateTicker() {
   for (let i = 0; i < TOWNS.length; i++) {
     const town = TOWNS[i];
     if (!town.big && !town.cultural && !town.sparse) continue;   // big, culturally significant, or a sparse-region town
-    const s = byCountry[town.cc] || (byCountry[town.cc] = calcFor(utcNoon(t), town.cc));
+    if (settings.method === 'auto' && localMethod(town.lat, town.lon)) {   // a town on a stored timetable: read its times
+      const tm = timesOn(town, localDateNoon(t, town.tz));
+      let p = -1; PERIODS.forEach((per, j) => { if (tm[per.key] <= t) p = j; });
+      if (p >= 0 && p !== 1 && t - tm[PERIODS[p].key] < TICK_MIN * 60000) groups[p].push(i);
+      continue;
+    }
+    const s = byCountry[town.cc] || (byCountry[town.cc] = calcFor(utcNoon(t), { cc: town.cc }));
     const ev = dayEvents(town.lat, sp.decl, s); if (!ev) continue;
     const st = wrapHour(utcH + town.lon / 15 + sp.eqt - 12);
     const p = periodAt(ev, st);
@@ -3294,7 +3313,7 @@ function updatePeople() {
   const sum = PERIODS.map(() => 0);
   for (const town of TOWNS) {
     if (!town.w) continue;
-    const s = byCountry[town.cc] || (byCountry[town.cc] = calcFor(utcNoon(t), town.cc));
+    const s = byCountry[town.cc] || (byCountry[town.cc] = calcFor(utcNoon(t), { cc: town.cc }));
     const ev = dayEvents(town.lat, sp.decl, s), st = wrapHour(utcH + town.lon / 15 + sp.eqt - 12);
     let p;
     if (ev) p = periodAt(ev, st);

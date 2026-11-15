@@ -7,7 +7,7 @@
 // one minute unless the row says otherwise; a row can also set "known" to explain a difference left as it is).
 const fs = require('fs'), path = require('path');
 const src = path.join(__dirname, '..');
-const core = new Function(fs.readFileSync(path.join(src, 'core.js'), 'utf8') + '\nreturn { METHODS, EVENTS, prayerTimes };')();
+const core = new Function(fs.readFileSync(path.join(src, 'core.js'), 'utf8') + '\nreturn { METHODS, EVENTS, prayerTimes, localMethod };')();
 const template = fs.readFileSync(path.join(src, 'template.html'), 'utf8').replace(/\r\n/g, '\n');
 function stmt(name) {
   const a = template.indexOf(`\nconst ${name} = `);
@@ -36,7 +36,7 @@ let failed = 0, checked = 0;
 for (const o of JSON.parse(fs.readFileSync(path.join(__dirname, 'official-times.json'), 'utf8'))) {
   if (only.length && !only.some(x => o.city.toLowerCase().includes(x))) continue;
   const p = find(o.city, o.cc), [y, m, d] = o.date.split('-').map(Number);
-  const method = COUNTRY_METHOD[o.cc] || 'MWL', asr = COUNTRY_ASR[o.cc] || 1, within = o.within == null ? 1 : o.within;
+  const method = core.localMethod(p.lat, p.lon) || COUNTRY_METHOD[o.cc] || 'MWL', asr = COUNTRY_ASR[o.cc] || 1, within = o.within == null ? 1 : o.within;
   const t = core.prayerTimes(p.lat, p.lon, Date.UTC(y, m - 1, d, 12), { method, asr, highLat: 'angle', polar: 'nearest' });
   const diffs = core.EVENTS.map(k => o.times[k] ? mins(shown(t[k], p.tz)) - mins(o.times[k]) : null);
   const worst = Math.max(...diffs.map(x => Math.abs(x || 0))), ok = worst <= within;

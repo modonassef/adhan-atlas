@@ -20,8 +20,8 @@ const value = (src, name) => new Function(`${stmt(src, name)}\nreturn ${name};`)
 
 module.exports = function buildCityPages(out, { url, template, coreSrc, places, now = Date.now() }) {
   template = template.replace(/\r\n/g, '\n');   // the statements are found by their line ends
-  const { METHODS, RAD, DEG, EVENTS, sunPosition, dayEvents, prayerTimes } =
-    new Function(coreSrc + '\nreturn { METHODS, RAD, DEG, EVENTS, sunPosition, dayEvents, prayerTimes };')();
+  const { METHODS, RAD, DEG, EVENTS, LONDON, sunPosition, dayEvents, prayerTimes, localMethod, tableTimes } =
+    new Function(coreSrc + '\nreturn { METHODS, RAD, DEG, EVENTS, LONDON, sunPosition, dayEvents, prayerTimes, localMethod, tableTimes };')();
   const PERIODS = value(template, 'PERIODS'), METHOD_AR = value(template, 'METHOD_AR'), AR_NAMES = value(template, 'AR_NAMES'),
     CITIES = value(template, 'CITIES'), COUNTRY_METHOD = value(template, 'COUNTRY_METHOD'), KAABA = value(template, 'KAABA'), COUNTRY_ASR = value(template, 'COUNTRY_ASR');
   const slug = new Function([stmt(template, 'fold'), stmt(template, 'LATIN'), stmt(template, 'slug'), 'return slug;'].join('\n'))();
@@ -107,6 +107,7 @@ module.exports = function buildCityPages(out, { url, template, coreSrc, places, 
       open: n => `Open ${n} on the live map`, openSub: 'The live map adds a Qibla compass, the month’s timetable, a calendar download and a mosque display.',
       about: 'About these times',
       method: (m, fajr, isha, where, two, adj) => `Times follow the ${m} method (Fajr when the sun is ${fajr}° below the horizon, Isha ${isha}), ${where}, with Asr when a shadow is ${two ? 'twice as long as the object casting it, the Hanafi rule' : 'as long as the object casting it'}.${adj ? ' They include the few minutes of precaution that its published timetable adds.' : ''} You can choose another method on the live map.`,
+      methodTable: (m, y, fajr, isha, two) => `Times follow the ${m}, which London’s large mosques share. Fajr and Isha are as it prints them for ${y}; in other years they are calculated (Fajr when the sun is ${fajr}° below the horizon, Isha at ${isha}°). Asr is when a shadow is ${two ? 'twice as long as the object casting it, the Hanafi rule' : 'as long as the object casting it'}. You can choose another method on the live map.`,
       ishaDeg: a => `at ${a}°`, ishaMin: m => `${m} minutes after Maghrib`,
       usedIn: co => co ? `the one most followed in ${co}` : 'the one most followed there', usedElse: 'used where no local method is set',
       qibla: (n, b, dir, km) => `The Qibla from ${n} is ${b}° from north, towards the ${dir}. The Kaaba is ${km} km away.`,
@@ -128,6 +129,7 @@ module.exports = function buildCityPages(out, { url, template, coreSrc, places, 
       open: n => `اعرض ${n} على الخريطة الحيّة`, openSub: 'في الخريطة الحيّة بوصلة القبلة، وجدول الشهر، وتنزيل المواقيت إلى التقويم، وشاشة عرض للمساجد.',
       about: 'عن هذه المواقيت',
       method: (m, fajr, isha, where, two, adj) => `تُحسب المواقيت بطريقة ${m} (الفجر حين تكون الشمس ${fajr}° تحت الأفق، والعشاء ${isha})، ${where}، والعصر حين يصير ظل الشيء ${two ? 'مثليه على المذهب الحنفي' : 'مثله'}.${adj ? ' وتتضمن دقائق الاحتياط التي يضيفها تقويمها المنشور.' : ''} يمكنك اختيار طريقة أخرى في الخريطة الحيّة.`,
+      methodTable: (m, y, fajr, isha, two) => `تتبع المواقيت ${m} الذي تعتمده كبرى مساجد لندن. الفجر والعشاء كما وردا فيه لعام ${y}، وفي غيره من الأعوام يُحسبان (الفجر حين تكون الشمس ${fajr}° تحت الأفق، والعشاء عند ${isha}°). والعصر حين يصير ظل الشيء ${two ? 'مثليه على المذهب الحنفي' : 'مثله'}. يمكنك اختيار طريقة أخرى في الخريطة الحيّة.`,
       ishaDeg: a => `عند ${a}°`, ishaMin: m => `بعد المغرب بـ${m} دقيقة`,
       usedIn: co => co ? `وهي الأكثر اتباعًا في ${co}` : 'وهي الأكثر اتباعًا هناك', usedElse: 'وهي المعتمدة حيث لا توجد طريقة محلية',
       qibla: (n, b, dir, km) => `اتجاه القبلة من ${n}: ${b}° من الشمال، نحو ${dir}. وتبعد الكعبة المشرفة ${km} كم.`,
@@ -192,7 +194,7 @@ ${script ? `<script src="${root}assets/city.js" defer></script>\n` : ''}</body>
   const nearest = (c, pool) => pool.filter(o => o !== c).map(o => [distKm(c, o), o]).sort((a, b) => a[0] - b[0]).slice(0, 8).map(x => x[1]);
   function cityPage(c, lang, pool) {
     const t = T[lang], root = rootOf[lang], n = nameIn(c, lang), co = country(c, lang), L = s => dg(s, lang);
-    const methodKey = COUNTRY_METHOD[c.cc] || 'MWL', m = METHODS[methodKey];
+    const methodKey = localMethod(c.lat, c.lon) || COUNTRY_METHOD[c.cc] || 'MWL', m = METHODS[methodKey];   // as the map chooses it
     const asr = COUNTRY_ASR[c.cc] || 1;
     const base = { method: methodKey, asr, highLat: 'angle', polar: 'nearest' };
     const calc = noon => methodKey === 'Makkah' && hijriFmt && parseInt(hijriFmt.format(noon), 10) === 9 ? { ...base, ramadan: true } : base;
@@ -207,10 +209,12 @@ ${script ? `<script src="${root}assets/city.js" defer></script>\n` : ''}</body>
       const dir = COMPASS[lang][Math.round(b / 45) % 8], kmText = lang === 'ar' ? L(Math.round(km / 10) * 10) : (Math.round(km / 10) * 10).toLocaleString('en-GB');
       qibla = t.qibla(n, L(Math.round(b)), dir, kmText); qShort = t.qiblaShort(L(Math.round(b)), dir);
     }
-    // the shortest and longest fast of the year, from each day's solar events (hours from solar noon)
+    // the shortest and longest fast of the year, from each day's solar events (hours from solar noon),
+    // or from the stored timetable where the city has one
     let lo = null, hi = null;
     for (let d = 0; d < 365; d++) {
-      const noon = Date.UTC(year, 0, 1 + d, 12), ev = dayEvents(c.lat, sunPosition(noon - c.lon / 15 * 3600000).decl, base);
+      const noon = Date.UTC(year, 0, 1 + d, 12), tm = tableTimes(c.lat, c.lon, noon, base);
+      const ev = tm ? { fajr: 0, maghrib: (tm.maghrib - tm.fajr) / 3600000 } : dayEvents(c.lat, sunPosition(noon - c.lon / 15 * 3600000).decl, base);
       if (!ev || !isFinite(ev.fajr) || !isFinite(ev.maghrib)) continue;
       const len = ev.maghrib - ev.fajr;
       if (!lo || len < lo.len) lo = { len, noon };
@@ -220,7 +224,8 @@ ${script ? `<script src="${root}assets/city.js" defer></script>\n` : ''}</body>
     const dayOf = noon => fmt(lang, 'UTC', 'day').format(noon);
     const fast = lo && hi && hi.len - lo.len > 1 / 12 ? t.fast(dur(lo.len), dayOf(lo.noon), dur(hi.len), dayOf(hi.noon)) : '';
     const known = !!COUNTRY_METHOD[c.cc];
-    const method = t.method(lang === 'ar' ? METHOD_AR[methodKey] : m.name, num(m.fajr, lang),
+    const method = m.table ? t.methodTable(lang === 'ar' ? METHOD_AR[methodKey] : m.name, L(LONDON.year), num(m.fajr, lang), num(m.isha, lang), asr === 2)
+      : t.method(lang === 'ar' ? METHOD_AR[methodKey] : m.name, num(m.fajr, lang),
       m.ishaMin ? t.ishaMin(L(m.ishaMin)) : t.ishaDeg(num(m.isha, lang)), known ? t.usedIn(co) : t.usedElse, asr === 2,
       !!m.adj && Object.values(m.adj).some(v => Math.abs(v) >= 1));
     const rows = PERIODS.map(p => `      <li data-k="${p.key}"><i style="background:var(--p-${p.key})"></i><span class="n">${t.periods(p)}${lang === 'en' && p.en ? `<em>${p.en}</em>` : ''}</span><b class="t">${time(today[p.key], c, lang)}</b></li>`).join('\n');
