@@ -106,7 +106,7 @@ module.exports = function buildCityPages(out, { url, template, coreSrc, places, 
       staticFor: d => `Times for ${d}.`,
       open: n => `Open ${n} on the live map`, openSub: 'The live map adds a Qibla compass, the month’s timetable, a calendar download and a mosque display.',
       about: 'About these times',
-      method: (m, fajr, isha, where, two) => `Times follow the ${m} method (Fajr when the sun is ${fajr}° below the horizon, Isha ${isha}), ${where}, with Asr when a shadow is ${two ? 'twice as long as the object casting it, the Hanafi rule' : 'as long as the object casting it'}. You can choose another method on the live map.`,
+      method: (m, fajr, isha, where, two, adj) => `Times follow the ${m} method (Fajr when the sun is ${fajr}° below the horizon, Isha ${isha}), ${where}, with Asr when a shadow is ${two ? 'twice as long as the object casting it, the Hanafi rule' : 'as long as the object casting it'}.${adj ? ' They include the few minutes of precaution that its published timetable adds.' : ''} You can choose another method on the live map.`,
       ishaDeg: a => `at ${a}°`, ishaMin: m => `${m} minutes after Maghrib`,
       usedIn: co => co ? `the one most followed in ${co}` : 'the one most followed there', usedElse: 'used where no local method is set',
       qibla: (n, b, dir, km) => `The Qibla from ${n} is ${b}° from north, towards the ${dir}. The Kaaba is ${km} km away.`,
@@ -127,7 +127,7 @@ module.exports = function buildCityPages(out, { url, template, coreSrc, places, 
       staticFor: d => `مواقيت يوم ${d}.`,
       open: n => `اعرض ${n} على الخريطة الحيّة`, openSub: 'في الخريطة الحيّة بوصلة القبلة، وجدول الشهر، وتنزيل المواقيت إلى التقويم، وشاشة عرض للمساجد.',
       about: 'عن هذه المواقيت',
-      method: (m, fajr, isha, where, two) => `تُحسب المواقيت بطريقة ${m} (الفجر حين تكون الشمس ${fajr}° تحت الأفق، والعشاء ${isha})، ${where}، والعصر حين يصير ظل الشيء ${two ? 'مثليه على المذهب الحنفي' : 'مثله'}. يمكنك اختيار طريقة أخرى في الخريطة الحيّة.`,
+      method: (m, fajr, isha, where, two, adj) => `تُحسب المواقيت بطريقة ${m} (الفجر حين تكون الشمس ${fajr}° تحت الأفق، والعشاء ${isha})، ${where}، والعصر حين يصير ظل الشيء ${two ? 'مثليه على المذهب الحنفي' : 'مثله'}.${adj ? ' وتتضمن دقائق الاحتياط التي يضيفها تقويمها المنشور.' : ''} يمكنك اختيار طريقة أخرى في الخريطة الحيّة.`,
       ishaDeg: a => `عند ${a}°`, ishaMin: m => `بعد المغرب بـ${m} دقيقة`,
       usedIn: co => co ? `وهي الأكثر اتباعًا في ${co}` : 'وهي الأكثر اتباعًا هناك', usedElse: 'وهي المعتمدة حيث لا توجد طريقة محلية',
       qibla: (n, b, dir, km) => `اتجاه القبلة من ${n}: ${b}° من الشمال، نحو ${dir}. وتبعد الكعبة المشرفة ${km} كم.`,
@@ -221,7 +221,8 @@ ${script ? `<script src="${root}assets/city.js" defer></script>\n` : ''}</body>
     const fast = lo && hi && hi.len - lo.len > 1 / 12 ? t.fast(dur(lo.len), dayOf(lo.noon), dur(hi.len), dayOf(hi.noon)) : '';
     const known = !!COUNTRY_METHOD[c.cc];
     const method = t.method(lang === 'ar' ? METHOD_AR[methodKey] : m.name, num(m.fajr, lang),
-      m.ishaMin ? t.ishaMin(L(m.ishaMin)) : t.ishaDeg(num(m.isha, lang)), known ? t.usedIn(co) : t.usedElse, asr === 2);
+      m.ishaMin ? t.ishaMin(L(m.ishaMin)) : t.ishaDeg(num(m.isha, lang)), known ? t.usedIn(co) : t.usedElse, asr === 2,
+      !!m.adj && Object.values(m.adj).some(v => Math.abs(v) >= 1));
     const rows = PERIODS.map(p => `      <li data-k="${p.key}"><i style="background:var(--p-${p.key})"></i><span class="n">${t.periods(p)}${lang === 'en' && p.en ? `<em>${p.en}</em>` : ''}</span><b class="t">${time(today[p.key], c, lang)}</b></li>`).join('\n');
     const table = Array.from({ length: 12 }, (_, mo) => {
       const noon = Date.UTC(year, mo, 15, 12), tm = on(noon);

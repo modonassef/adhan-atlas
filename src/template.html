@@ -960,7 +960,8 @@ const METHOD_AR = {
   Jafari: 'الشيعة الإثنا عشرية (الجعفري)', Gulf: 'منطقة الخليج', Kuwait: 'الكويت', Qatar: 'قطر', Dubai: 'دبي',
   Singapore: 'المجلس الإسلامي، سنغافورة', JAKIM: 'إدارة التنمية الإسلامية، ماليزيا', Kemenag: 'وزارة الشؤون الدينية، إندونيسيا',
   Turkey: 'رئاسة الشؤون الدينية، تركيا', France: 'اتحاد المنظمات الإسلامية، فرنسا', Russia: 'الإدارة الدينية لمسلمي روسيا',
-  Morocco: 'وزارة الأوقاف والشؤون الإسلامية، المغرب',
+  Morocco: 'وزارة الأوقاف والشؤون الإسلامية، المغرب', Brunei: 'وزارة الشؤون الدينية، بروناي',
+  Kazakhstan: 'الإدارة الدينية لمسلمي كازاخستان', Uzbekistan: 'إدارة مسلمي أوزبكستان',
 };
 const MOON_AR = { 'New moon': 'محاق', 'Waxing crescent': 'هلال متزايد', 'First quarter': 'تربيع أول', 'Waxing gibbous': 'أحدب متزايد',
   'Full moon': 'بدر', 'Waning gibbous': 'أحدب متناقص', 'Last quarter': 'تربيع أخير', 'Waning crescent': 'هلال متناقص' };
@@ -1250,10 +1251,13 @@ const COUNTRY_METHOD = {
   SA: 'Makkah', YE: 'Makkah', AE: 'Dubai', QA: 'Qatar', KW: 'Kuwait', BH: 'Gulf', OM: 'Gulf',
   EG: 'Egypt', SD: 'Egypt', LY: 'Egypt', SY: 'Egypt', LB: 'Egypt', JO: 'Egypt', PS: 'Egypt', IL: 'Egypt',
   MA: 'Morocco', TR: 'Turkey', IR: 'Tehran', PK: 'Karachi', IN: 'Karachi', BD: 'Karachi', AF: 'Karachi',
-  MY: 'JAKIM', BN: 'JAKIM', SG: 'Singapore', ID: 'Kemenag', US: 'ISNA', CA: 'ISNA', FR: 'France', RU: 'Russia' };
+  MY: 'JAKIM', BN: 'Brunei', SG: 'Singapore', ID: 'Kemenag', US: 'ISNA', CA: 'ISNA', FR: 'France', RU: 'Russia',
+  KZ: 'Kazakhstan', UZ: 'Uzbekistan' };
 const methodFor = cc => settings.method !== 'auto' ? settings.method : COUNTRY_METHOD[cc] || 'MWL';
-// Where Asr is timed by the Hanafi rule (a shadow twice the object's length); everywhere else by the earlier one
-const COUNTRY_ASR = { PK: 2, IN: 2, BD: 2, AF: 2 };
+// Where Asr is timed by the Hanafi rule (a shadow twice the object's length); everywhere else by the earlier one.
+// Kazakhstan, Uzbekistan and Kyrgyzstan are as their muftiates' own timetables give it. Türkiye and Russia, though
+// largely Hanafi, publish the earlier time.
+const COUNTRY_ASR = { PK: 2, IN: 2, BD: 2, AF: 2, KZ: 2, UZ: 2, KG: 2 };
 const asrFor = cc => settings.asr !== 'auto' ? settings.asr : COUNTRY_ASR[cc] || 1;
 const myTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 // A first visit opens on the leading city of the reader's own time zone, which needs no permission. It is only
@@ -2166,14 +2170,17 @@ function update(patch) {
 
 function ruleText(i) {
   const k = methodFor(place.cc), m = METHODS[k];
+  // the whole minutes of precaution the authority's own timetable adds to this time, if any
+  const a = Math.trunc(m.adj && m.adj[PERIODS[i].key] || 0);
+  const adj = a ? ` ${a > 0 ? '+' : '−'} ${dn(Math.abs(a))} ${AR() ? 'د' : 'min'}` : '';
   if (AR()) return [
-    `الشمس ${dn(m.fajr)}° تحت الأفق`, 'الشروق · نهاية وقت الفجر', 'الزوال',
-    `ظل الشيء ${asrFor(place.cc) === 2 ? 'مثليه' : 'مثله'} بعد ظل الزوال`, m.maghrib ? `الشمس ${dn(m.maghrib)}° تحت الأفق` : 'الغروب',
-    m.ishaMin ? `بعد المغرب بـ${dn(m.ishaMin)} دقيقة${k === 'Makkah' ? '، و١٢٠ في رمضان' : ''}` : `الشمس ${dn(m.isha)}° تحت الأفق`][i];
+    `الشمس ${dn(m.fajr)}° تحت الأفق${adj}`, `الشروق${adj} · نهاية وقت الفجر`, `الزوال${adj}`,
+    `ظل الشيء ${asrFor(place.cc) === 2 ? 'مثليه' : 'مثله'} بعد ظل الزوال${adj && '،' + adj}`, (m.maghrib ? `الشمس ${dn(m.maghrib)}° تحت الأفق` : 'الغروب') + adj,
+    m.ishaMin ? `بعد المغرب بـ${dn(m.ishaMin)} دقيقة${k === 'Makkah' ? '، و١٢٠ في رمضان' : ''}` : `الشمس ${dn(m.isha)}° تحت الأفق${adj}`][i];
   return [
-    `Sun ${m.fajr}° below horizon`, 'Sunrise · Fajr ends', 'Solar noon',
-    `Shadow ${asrFor(place.cc)}× length + noon shadow`, m.maghrib ? `Sun ${m.maghrib}° below horizon` : 'Sunset',
-    m.ishaMin ? `${m.ishaMin} min after Maghrib${k === 'Makkah' ? ', 120 in Ramadan' : ''}` : `Sun ${m.isha}° below horizon`][i];
+    `Sun ${m.fajr}° below horizon${adj}`, `Sunrise${adj} · Fajr ends`, `Solar noon${adj}`,
+    `Shadow ${asrFor(place.cc)}× length + noon shadow${adj && ',' + adj}`, (m.maghrib ? `Sun ${m.maghrib}° below horizon` : 'Sunset') + adj,
+    m.ishaMin ? `${m.ishaMin} min after Maghrib${k === 'Makkah' ? ', 120 in Ramadan' : ''}` : `Sun ${m.isha}° below horizon${adj}`][i];
 }
 let currentPeriod = -1;
 function updateLegend() {
